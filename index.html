@@ -171,7 +171,7 @@ refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
 function updateWarningLayer() {
   var warningUrl = 'https://www.jma.go.jp/bosai/jmatile/data/warn/{time}/{time}/{time}/surf/warn/{z}/{x}/{y}.png';
 
-  fetch('https://www.jma.go.jp/bosai/warning/data/warning/targetTimes.json')
+ fetch('https://www.jma.go.jp/bosai/warning/data/warning/37000.json')
     .then(function(res) { return res.json(); })
     .then(function(data) {
       var time = data.now ? data.now.basetime : null;
