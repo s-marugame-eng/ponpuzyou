@@ -106,14 +106,14 @@
   ];
 
   // マーカーを地図に追加
-  markers.forEach(function(m) {
-    var marker = L.marker([m.lat, m.lng]).addTo(map);
-    marker.bindPopup(
-      "<b>No." + m.no + " " + m.name + "</b><br>" +
-      "<a href='" + m.url + "' target='_blank'>詳細ページを開く</a>"
-      marker.bindTooltip(m.name, {permanent: true, direction: "top"}); 
-    );
-  });
+markers.forEach(function(m) {
+  var marker = L.marker([m.lat, m.lng]).addTo(map);
+  marker.bindPopup(
+    "<b>No." + m.no + " " + m.name + "</b><br>" +
+    "<a href='" + m.url + "' target='_blank'>詳細ページを開く</a>"
+  );
+  marker.bindTooltip(m.name, {permanent: true, direction: "top"});
+});
 </script>
 
 </body>
