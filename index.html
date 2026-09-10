@@ -105,7 +105,10 @@
     }
   ];
 
+<script>
+// ==========================================
 // マーカーを地図に追加
+// ==========================================
 markers.forEach(function(m) {
   var marker = L.marker([m.lat, m.lng]).addTo(map);
   marker.bindPopup(
@@ -115,25 +118,167 @@ markers.forEach(function(m) {
   marker.bindTooltip(m.name, {permanent: true, direction: "top"});
 });
 
-// 気象庁の雨雲レーダーを地図に追加
-fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json')
-  .then(function(res) { return res.json(); })
-  .then(function(data) {
-    var latest = data[data.length - 1];
-    var basetime = latest.basetime;
-    var validtime = latest.validtime;
+// ==========================================
+// レイヤー管理用の変数
+// ==========================================
+var jmaRainLayer = null;      // 雨雲レーダー
+var jmaWarningLayer = null;   // 警報・注意報
+var rainLayerVisible = true;  // 雨雲の表示状態
+var refreshTimer = null;      // 自動更新タイマー
 
-    var jmaRainLayer = L.tileLayer(
-      'https://www.jma.go.jp/bosai/jmatile/data/nowc/' + basetime + '/none/' + validtime + '/surf/hrpns/{z}/{x}/{y}.png',
-      {
+// ==========================================
+// 雨雲レーダーを取得して表示（更新にも対応）
+// ==========================================
+function updateRainLayer() {
+  fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var latest = data[data.length - 1];
+      var basetime = latest.basetime;
+      var validtime = latest.validtime;
+
+      var newUrl = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/' + basetime +
+                   '/none/' + validtime + '/surf/hrpns/{z}/{x}/{y}.png';
+
+      // 既存レイヤーがあれば削除してから追加し直す（更新のため）
+      if (jmaRainLayer) {
+        map.removeLayer(jmaRainLayer);
+      }
+
+      jmaRainLayer = L.tileLayer(newUrl, {
         opacity: 0.6,
         attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
         maxNativeZoom: 10,
         maxZoom: 18
+      });
+
+      // ON/OFF状態を保持したまま更新
+      if (rainLayerVisible) {
+        jmaRainLayer.addTo(map);
       }
-    );
-    jmaRainLayer.addTo(map);
-  });
+
+      console.log('雨雲レーダーを更新しました: ' + validtime);
+    })
+    .catch(function(err) {
+      console.error('雨雲レーダーの取得に失敗しました', err);
+    });
+}
+
+// 初回読み込み
+updateRainLayer();
+
+// 5分（300000ミリ秒）ごとに自動更新
+refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
+
+// ==========================================
+// 警報・注意報レイヤーを追加
+// ==========================================
+function updateWarningLayer() {
+  fetch('https://www.jma.go.jp/bosai/warning/data/warning/map.json')
+    .then(function(res) { return res.json(); })
+    .catch(function(err) {
+      console.error('警報データの取得に失敗しました', err);
+    });
+
+  // 気象庁の警報・注意報タイル（全国合成）
+  var warningUrl = 'https://www.jma.go.jp/bosai/jmatile/data/warn/{time}/{time}/{time}/surf/warn/{z}/{x}/{y}.png';
+
+  fetch('https://www.jma.go.jp/bosai/warning/data/warning/targetTimes.json')
+    .then(function(res) { return res.json(); })
+    .then(function(data) {
+      var time = data.now ? data.now.basetime : null;
+      if (!time) return;
+
+      if (jmaWarningLayer) {
+        map.removeLayer(jmaWarningLayer);
+      }
+
+      jmaWarningLayer = L.tileLayer(
+        warningUrl.replace(/{time}/g, time),
+        {
+          opacity: 0.5,
+          attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
+          maxZoom: 18
+        }
+      );
+      // 初期状態では表示しない（必要に応じてボタン等でON可能）
+    })
+    .catch(function(err) {
+      console.error('警報レイヤーの取得に失敗しました', err);
+    });
+}
+updateWarningLayer();
+
+// ==========================================
+// レイヤー切り替えボタンをコントロールとして追加
+// ==========================================
+var LayerControl = L.Control.extend({
+  options: { position: 'topright' },
+  onAdd: function() {
+    var container = L.DomUtil.create('div', 'layer-toggle-control');
+    container.style.backgroundColor = 'white';
+    container.style.padding = '8px 10px';
+    container.style.borderRadius = '6px';
+    container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
+    container.style.fontSize = '13px';
+    container.style.lineHeight = '1.6';
+
+    container.innerHTML =
+      '<div><label><input type="checkbox" id="toggleRain" checked> 雨雲レーダー</label></div>' +
+      '<div><label><input type="checkbox" id="toggleWarning"> 警報・注意報</label></div>';
+
+    L.DomEvent.disableClickPropagation(container);
+    return container;
+  }
+});
+map.addControl(new LayerControl());
+
+// チェックボックスの動作を設定
+document.getElementById('toggleRain').addEventListener('change', function(e) {
+  rainLayerVisible = e.target.checked;
+  if (rainLayerVisible) {
+    if (jmaRainLayer) jmaRainLayer.addTo(map);
+  } else {
+    if (jmaRainLayer) map.removeLayer(jmaRainLayer);
+  }
+});
+
+document.getElementById('toggleWarning').addEventListener('change', function(e) {
+  if (e.target.checked) {
+    if (jmaWarningLayer) jmaWarningLayer.addTo(map);
+  } else {
+    if (jmaWarningLayer) map.removeLayer(jmaWarningLayer);
+  }
+});
+
+// ==========================================
+// 雨の強さの凡例を地図上に表示
+// ==========================================
+var LegendControl = L.Control.extend({
+  options: { position: 'bottomright' },
+  onAdd: function() {
+    var container = L.DomUtil.create('div', 'legend-control');
+    container.style.backgroundColor = 'white';
+    container.style.padding = '8px 10px';
+    container.style.borderRadius = '6px';
+    container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
+    container.style.fontSize = '12px';
+    container.style.lineHeight = '1.6';
+
+    container.innerHTML =
+      '<div style="font-weight:bold; margin-bottom:4px;">降水強度 (mm/h)</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#a0d8ef;margin-right:6px;"></span>1未満（弱い）</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#3399ff;margin-right:6px;"></span>1〜5</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#0033cc;margin-right:6px;"></span>5〜20</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#ffff00;margin-right:6px;"></span>20〜50</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#ff9900;margin-right:6px;"></span>50〜80</div>' +
+      '<div><span style="display:inline-block;width:14px;height:14px;background:#ff0000;margin-right:6px;"></span>80以上（非常に強い）</div>';
+
+    return container;
+  }
+});
+map.addControl(new LegendControl());
+
 </script>
 
 </body>
