@@ -114,6 +114,26 @@ markers.forEach(function(m) {
   );
   marker.bindTooltip(m.name, {permanent: true, direction: "top"});
 });
+
+// 気象庁の雨雲レーダーを地図に追加
+fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json')
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    var latest = data[data.length - 1];
+    var basetime = latest.basetime;
+    var validtime = latest.validtime;
+
+    var jmaRainLayer = L.tileLayer(
+      'https://www.jma.go.jp/bosai/jmatile/data/nowc/' + basetime + '/none/' + validtime + '/surf/hrpns/{z}/{x}/{y}.png',
+      {
+        opacity: 0.6,
+        attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
+        maxNativeZoom: 10,
+        maxZoom: 18
+      }
+    );
+    jmaRainLayer.addTo(map);
+  });
 </script>
 
 </body>
