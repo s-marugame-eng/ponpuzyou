@@ -130,6 +130,17 @@ fetch('https://api.rainviewer.com/public/weather-maps.json')
       }
     );
     rainLayer.addTo(map);
+
+    // 対応していないズームレベルの画像（エラー画像含む）は非表示にする
+    rainLayer.on('tileload', function(e) {
+      if (e.tile.naturalWidth === 256 && e.tile.naturalHeight === 256) {
+        // 通常サイズの画像はそのまま表示
+        return;
+      }
+    });
+    rainLayer.on('tileerror', function(e) {
+      e.tile.style.display = 'none';
+    });
   });
 </script>
 
