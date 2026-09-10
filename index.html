@@ -105,7 +105,7 @@
     }
   ];
 
-  // マーカーを地図に追加
+ // マーカーを地図に追加
 markers.forEach(function(m) {
   var marker = L.marker([m.lat, m.lng]).addTo(map);
   marker.bindPopup(
@@ -114,6 +114,7 @@ markers.forEach(function(m) {
   );
   marker.bindTooltip(m.name, {permanent: true, direction: "top"});
 });
+
 // RainViewerの雨雲レーダーを地図に追加
 fetch('https://api.rainviewer.com/public/weather-maps.json')
   .then(function(res) { return res.json(); })
@@ -123,11 +124,13 @@ fetch('https://api.rainviewer.com/public/weather-maps.json')
       'https://tilecache.rainviewer.com' + latestFrame.path + '/256/{z}/{x}/{y}/2/1_1.png',
       {
         opacity: 0.6,
-        attribution: 'RainViewer'
+        attribution: 'RainViewer',
+        maxNativeZoom: 10,
+        maxZoom: 18
       }
     );
     rainLayer.addTo(map);
-  });  
+  });
 </script>
 
 </body>
