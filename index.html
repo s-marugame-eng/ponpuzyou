@@ -1,46 +1,119 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>〇〇店 アクセスページ</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 700px;
-      margin: 40px auto;
-      padding: 0 20px;
-      color: #333;
-    }
-    h1 {
-      border-bottom: 2px solid #333;
-      padding-bottom: 10px;
-    }
-    .info p {
-      line-height: 1.6;
-    }
-    iframe {
-      width: 100%;
-      height: 450px;
-      border: 0;
-      margin-top: 20px;
-      border-radius: 8px;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>丸亀市 ポンプ場マップ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+  }
+  #map {
+    width: 100%;
+    height: 100vh;
+  }
+  .leaflet-popup-content a {
+    color: #0066cc;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .leaflet-popup-content a:hover {
+    text-decoration: underline;
+  }
+</style>
 </head>
 <body>
-  <h1>〇〇店 アクセス</h1>
 
-  <div class="info">
-    <p><strong>住所：</strong>東京都〇〇区〇〇1-2-3</p>
-    <p><strong>電話番号：</strong>03-1234-5678</p>
-    <p><strong>営業時間：</strong>10:00〜19:00（定休日：月曜）</p>
-  </div>
+<div id="map"></div>
 
-  <iframe 
-    src="https://www.google.com/maps/embed?pb=ここにGoogleマップの埋め込みURLを貼り付け" 
-    allowfullscreen="" 
-    loading="lazy" 
-    referrerpolicy="no-referrer-when-upgrade">
-  </iframe>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+  // 地図の初期表示（丸亀市中心付近）
+  var map = L.map('map').setView([34.2950, 133.7900], 13);
+
+  // OpenStreetMapタイルレイヤー
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+
+  // マーカーデータ（No, 名前, 緯度, 経度, リンクURL）
+  var markers = [
+    {
+      no: 1,
+      name: "塩屋ポンプ場",
+      lat: 34.28909,
+      lng: 133.77741,
+      url: "http://sioyamarugame.mydns.jp/user/Page_1.html"
+    },
+    {
+      no: 2,
+      name: "塩屋中継ポンプ場",
+      lat: 34.28951,
+      lng: 133.77780,
+      url: "http://sioyamarugame.mydns.jp/user/Page_1.html"
+    },
+    {
+      no: 3,
+      name: "城西ポンプ場",
+      lat: 34.29347,
+      lng: 133.78914,
+      url: "http://jyouseimarugame.mydns.jp/user/Page_1.html"
+    },
+    {
+      no: 4,
+      name: "城北ポンプ場",
+      lat: 34.30038,
+      lng: 133.80099,
+      url: "http://jyouhokumarugame.mydns.jp/user/Page_1.html"
+    },
+    {
+      no: 5,
+      name: "土器中継ポンプ場",
+      lat: 34.30135,
+      lng: 133.80354,
+      url: "http://jyouhokumarugame.mydns.jp/user/Page_1.html"
+    },
+    {
+      no: 6,
+      name: "今津ポンプ場",
+      lat: 34.28509,
+      lng: 133.78533,
+      url: "https://fuso-fics.net/current_alarms"
+    },
+    {
+      no: 7,
+      name: "昭和町汚水幹水ポンプ場",
+      lat: 34.29624,
+      lng: 133.76455,
+      url: "https://fuso-fics.net/current_alarms"
+    },
+    {
+      no: 8,
+      name: "浄化センター消化ガス発電",
+      lat: 34.29110,
+      lng: 133.76878,
+      url: "https://iotviewer.b2clogin.com/iotviewer.onmicrosoft.com/B2C_1A_IOTVIEWERSIGNINWITHSMS/oauth2/v2.0/authorize?protocol=oauth2&response_type=code&access_type&client_id=fe1eb92a-72d5-40df-9714-32607354c7cc&redirect_uri=https%3A%2F%2Fiot-viewer.com%2FsigninCallback&scope=openid%20offline_access%20https%3A%2F%2Fiotviewer.onmicrosoft.com%2F5f9d0b8a-f771-4e1e-85a8-0e394569d96b%2Fuser_impersonation&state=4wFMVWmdV0&code_challenge_method=S256&code_challenge=Cj83Au1dQEKJWYsHHmH3Vqc-J1LDnaIANEkF1COdQN8"
+    }
+  ];
+
+  // マーカーを地図に追加
+  markers.forEach(function(m) {
+    var marker = L.marker([m.lat, m.lng]).addTo(map);
+    marker.bindPopup(
+      "<b>No." + m.no + " " + m.name + "</b><br>" +
+      "<a href='" + m.url + "' target='_blank'>詳細ページを開く</a>"
+    );
+  });
+</script>
+
 </body>
 </html>
