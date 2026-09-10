@@ -111,6 +111,7 @@
     marker.bindPopup(
       "<b>No." + m.no + " " + m.name + "</b><br>" +
       "<a href='" + m.url + "' target='_blank'>詳細ページを開く</a>"
+      marker.bindTooltip(m.name, {permanent: true, direction: "top"}); 
     );
   });
 </script>
