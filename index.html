@@ -127,18 +127,33 @@ var rainLayerVisible = true;
 var refreshTimer = null;
 
 // ==========================================
-// 雨雲レーダーを取得して表示（更新にも対応）
+// 雨雲レーダーを取得して表示（リアルタイム更新対応）
 // ==========================================
 function updateRainLayer() {
-  fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json')
-    .then(function(res) { return res.json(); })
+  // キャッシュ回避のためタイムスタンプ付与
+  var url = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json?_=' + Date.now();
+
+  fetch(url, { cache: 'no-store' })
+    .then(function(res) {
+      if (!res.ok) throw new Error('HTTPエラー: ' + res.status);
+      return res.json();
+    })
     .then(function(data) {
+      if (!data || data.length === 0) throw new Error('データが空です');
+
       var latest = data[data.length - 1];
       var basetime = latest.basetime;
       var validtime = latest.validtime;
 
       var newUrl = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/' + basetime +
                    '/none/' + validtime + '/surf/hrpns/{z}/{x}/{y}.png';
+
+      // 前回と同じvalidtimeなら再生成しない（不要な再描画防止）
+      if (window.lastValidTime === validtime) {
+        console.log('データ更新なし（validtime同一）: ' + validtime);
+        return;
+      }
+      window.lastValidTime = validtime;
 
       if (jmaRainLayer) {
         map.removeLayer(jmaRainLayer);
@@ -160,12 +175,19 @@ function updateRainLayer() {
     })
     .catch(function(err) {
       console.error('雨雲レーダーの取得に失敗しました', err);
+      // 失敗時は30秒後にリトライ
+      setTimeout(updateRainLayer, 30 * 1000);
     });
 }
 
+// 初回実行
 updateRainLayer();
+
+// 既存タイマーがあればクリアしてから再設定（多重起動防止）
+if (typeof refreshTimer !== 'undefined' && refreshTimer) {
+  clearInterval(refreshTimer);
+}
 refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
-  
 // ==========================================
 // 警報・注意報レイヤーを追加
 // ==========================================
