@@ -131,7 +131,7 @@ var refreshTimer = null;
 // ==========================================
 function updateRainLayer() {
   // キャッシュ回避のためタイムスタンプ付与
-  var url = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json?_=' + Date.now();
+  var url = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N2.json?_=' + Date.now();
 
   fetch(url, { cache: 'no-store' })
     .then(function(res) {
