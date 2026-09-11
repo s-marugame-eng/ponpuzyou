@@ -130,17 +130,10 @@ var refreshTimer = null;
 // 雨雲レーダーを取得して表示（更新にも対応）
 // ==========================================
 function updateRainLayer() {
-  fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json?t=' + Date.now())
+  fetch('https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N1.json')
     .then(function(res) { return res.json(); })
     .then(function(data) {
-      // 実況コマ（basetime === validtime）のみに絞り、最新を取得
-      var nowcastList = data.filter(function(d) {
-        return d.basetime === d.validtime;
-      });
-      var latest = nowcastList.length > 0
-        ? nowcastList[nowcastList.length - 1]
-        : data[0]; // フォールバック
-
+      var latest = data[data.length - 1];
       var basetime = latest.basetime;
       var validtime = latest.validtime;
 
@@ -168,6 +161,10 @@ function updateRainLayer() {
       console.error('雨雲レーダーの取得に失敗しました', err);
     });
 }
+
+updateRainLayer();
+refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
+  
 // ==========================================
 // 警報・注意報レイヤーを追加
 // ==========================================
