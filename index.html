@@ -169,33 +169,39 @@ refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
 // 警報・注意報レイヤーを追加
 // ==========================================
 function updateWarningLayer() {
-  var warningUrl = 'https://www.jma.go.jp/bosai/jmatile/data/warn/{time}/{time}/{time}/surf/warn/{z}/{x}/{y}.png';
+  var warningUrl = 'https://www.jma.go.jp/bosai/jmatile/data/warn/{basetime}/none/{validtime}/surf/warn/{z}/{x}/{y}.png';
 
- fetch('https://www.jma.go.jp/bosai/warning/data/warning/37000.json')
-    .then(function(res) { return res.json(); })
+  fetch('https://www.jma.go.jp/bosai/warning/data/warning/370000.json')
+    .then(function(res) {
+      if (!res.ok) {
+        throw new Error('HTTPエラー: ' + res.status + ' ' + res.url);
+      }
+      return res.json();
+    })
     .then(function(data) {
-      var time = data.now ? data.now.basetime : null;
-      if (!time) return;
+      var basetime = data.now ? data.now.basetime : null;
+      var validtime = data.now ? data.now.validtime : basetime;
+      if (!basetime) return;
 
       if (jmaWarningLayer) {
         map.removeLayer(jmaWarningLayer);
       }
 
-      jmaWarningLayer = L.tileLayer(
-        warningUrl.replace(/{time}/g, time),
-        {
-          opacity: 0.5,
-          attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
-          maxZoom: 18
-        }
-      );
+      var url = warningUrl
+        .replace('{basetime}', basetime)
+        .replace('{validtime}', validtime);
+
+      jmaWarningLayer = L.tileLayer(url, {
+        opacity: 0.5,
+        attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
+        maxZoom: 18
+      }).addTo(map);
     })
     .catch(function(err) {
-      console.error('警報レイヤーの取得に失敗しました', err);
+      console.error('警報レイヤーの取得に失敗しました', err.message);
     });
 }
 updateWarningLayer();
-
 // ==========================================
 // レイヤー切り替えボタンをコントロールとして追加
 // ==========================================
