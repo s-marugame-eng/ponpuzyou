@@ -156,6 +156,7 @@ function updateRainLayer() {
       }
 
       console.log('雨雲レーダーを更新しました: ' + validtime);
+      console.log('basetime:', basetime, ' / validtime:', validtime);
     })
     .catch(function(err) {
       console.error('雨雲レーダーの取得に失敗しました', err);
