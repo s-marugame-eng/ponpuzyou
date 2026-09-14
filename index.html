@@ -129,6 +129,17 @@ var refreshTimer = null;
 // ==========================================
 // 雨雲レーダーを取得して表示（リアルタイム更新対応）
 // ==========================================
+function parseJmaTime(str) {
+  // 例: "20260914052500" → "2026-09-14T05:25:00+09:00"
+  var y = str.slice(0, 4);
+  var m = str.slice(4, 6);
+  var d = str.slice(6, 8);
+  var hh = str.slice(8, 10);
+  var mm = str.slice(10, 12);
+  var ss = str.slice(12, 14) || '00';
+  return new Date(y + '-' + m + '-' + d + 'T' + hh + ':' + mm + ':' + ss + '+09:00');
+}
+
 function updateRainLayer() {
   var url = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/targetTimes_N2.json?_=' + Date.now();
 
@@ -140,17 +151,18 @@ function updateRainLayer() {
     .then(function(data) {
       if (!data || data.length === 0) throw new Error('データが空です');
 
-      // ▼▼▼ ここを入れ替え ▼▼▼
       var now = Date.now();
+
       var candidates = data.filter(function(d) {
-        return new Date(d.validtime).getTime() <= now;
+        return parseJmaTime(d.validtime).getTime() <= now;
       });
+
       var latest = candidates.length > 0
         ? candidates[candidates.length - 1]
         : data[0];
+
       var basetime = latest.basetime;
       var validtime = latest.validtime;
-      // ▲▲▲ ここまで ▲▲▲
 
       var newUrl = 'https://www.jma.go.jp/bosai/jmatile/data/nowc/' + basetime +
                    '/none/' + validtime + '/surf/hrpns/{z}/{x}/{y}.png';
@@ -185,10 +197,8 @@ function updateRainLayer() {
     });
 }
 
-// 初回実行
 updateRainLayer();
 
-// 既存タイマーがあればクリアしてから再設定（多重起動防止）
 if (typeof refreshTimer !== 'undefined' && refreshTimer) {
   clearInterval(refreshTimer);
 }
