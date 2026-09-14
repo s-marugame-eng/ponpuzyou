@@ -282,7 +282,7 @@ function renderWarningText(data) {
 
 function updateWarningText() {
   // 370000 の部分は表示したい地域コードに変更してください
-  fetch('https://www.jma.go.jp/bosai/warning/data/warning/370000.json', { cache: 'no-store' })
+  fetch('https://www.jma.go.jp/bosai/warning/data/r8/370000.json', { cache: 'no-store' })
     .then(function(res) {
       if (!res.ok) throw new Error('HTTPエラー: ' + res.status);
       return res.json();
