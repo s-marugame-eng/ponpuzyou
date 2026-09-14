@@ -31,6 +31,7 @@
 <body>
 <h1 style="text-align:center;">四国テクニカル　丸亀市遠方監視一覧</h1>
 <div id="map"></div>
+<div id="warning-text"></div> 
 
 <!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -204,47 +205,84 @@ if (typeof refreshTimer !== 'undefined' && refreshTimer) {
 }
 refreshTimer = setInterval(updateRainLayer, 5 * 60 * 1000);
 // ==========================================
-// 警報・注意報レイヤーを追加
+// 警報・注意報テキストを表示
 // ==========================================
-function updateWarningLayer() {
-  var timeUrl = 'https://www.jma.go.jp/bosai/jmatile/data/warn/targetTimes.json?_=' + Date.now();
+var WARNING_CODE_MAP = {
+  '02': '暴風雪警報', '03': '大雨警報', '04': '洪水警報', '05': '暴風警報',
+  '06': '大雪警報', '07': '波浪警報', '08': '高潮警報', '10': '大雨注意報',
+  '12': '大雪注意報', '13': '風雪注意報', '14': '雷注意報', '15': '強風注意報',
+  '16': '波浪注意報', '17': '融雪注意報', '18': '洪水注意報', '19': '高潮注意報',
+  '20': '濃霧注意報', '21': '乾燥注意報', '22': 'なだれ注意報', '23': '低温注意報',
+  '24': '霜注意報', '25': '着氷注意報', '26': '着雪注意報',
+  '32': '暴風特別警報', '33': '大雨特別警報', '35': '暴風雪特別警報',
+  '36': '大雪特別警報', '37': '波浪特別警報', '38': '高潮特別警報'
+};
 
-  fetch(timeUrl, { cache: 'no-store' })
+function getWarningName(code) {
+  return WARNING_CODE_MAP[code] || ('警報・注意報(コード:' + code + ')');
+}
+
+function renderWarningText(data) {
+  var container = document.getElementById('warning-text');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var reportDate = new Date(data.reportDatetime);
+  var pad = function(n) { return String(n).padStart(2, '0'); };
+  var dateStr = reportDate.getFullYear() + '年' + pad(reportDate.getMonth() + 1) + '月' +
+                pad(reportDate.getDate()) + '日' + pad(reportDate.getHours()) + '時' +
+                pad(reportDate.getMinutes()) + '分発表';
+
+  var header = document.createElement('div');
+  var officeP = document.createElement('p');
+  officeP.style.fontWeight = 'bold';
+  officeP.textContent = data.publishingOffice + '　' + dateStr;
+  header.appendChild(officeP);
+
+  if (data.headlineText) {
+    var headlineP = document.createElement('p');
+    headlineP.textContent = data.headlineText;
+    header.appendChild(headlineP);
+  }
+  container.appendChild(header);
+
+  var targetAreaType = data.areaTypes[1] || data.areaTypes[0];
+  var table = document.createElement('table');
+
+  targetAreaType.areas.forEach(function(area) {
+    var tr = document.createElement('tr');
+    var tdCode = document.createElement('td');
+    tdCode.textContent = area.code;
+    tr.appendChild(tdCode);
+
+    var tdWarn = document.createElement('td');
+    var texts = area.warnings.map(function(w) {
+      if (!w.code) return w.status;
+      return getWarningName(w.code) + '（' + w.status + '）';
+    });
+    tdWarn.textContent = texts.join('、');
+    tr.appendChild(tdWarn);
+
+    table.appendChild(tr);
+  });
+
+  container.appendChild(table);
+}
+
+function updateWarningText() {
+  // 370000 の部分は表示したい地域コードに変更してください
+  fetch('https://www.jma.go.jp/bosai/warning/data/warning/370000.json', { cache: 'no-store' })
     .then(function(res) {
-      if (!res.ok) throw new Error('HTTPエラー: ' + res.status + ' ' + res.url);
+      if (!res.ok) throw new Error('HTTPエラー: ' + res.status);
       return res.json();
     })
-    .then(function(data) {
-      if (!data || data.length === 0) throw new Error('データが空です');
-
-      // 警報タイルは実況のみのため末尾（最新）を採用
-      var latest = data[data.length - 1];
-      var basetime = latest.basetime;
-      var validtime = latest.validtime || basetime;
-
-      if (!basetime) return;
-
-      if (jmaWarningLayer) {
-        map.removeLayer(jmaWarningLayer);
-      }
-
-      var url = 'https://www.jma.go.jp/bosai/jmatile/data/warn/' + basetime +
-                 '/none/' + validtime + '/surf/warn/{z}/{x}/{y}.png';
-
-      jmaWarningLayer = L.tileLayer(url, {
-        opacity: 0.5,
-        attribution: '<a href="https://www.jma.go.jp/" target="_blank">気象庁</a>',
-        maxZoom: 14
-      }).addTo(map);
-
-      console.log('警報レイヤーを更新しました:', basetime, validtime);
-    })
+    .then(renderWarningText)
     .catch(function(err) {
-      console.error('警報レイヤーの取得に失敗しました', err.message);
+      console.error('警報・注意報テキストの取得に失敗しました', err.message);
     });
 }
 
-updateWarningLayer();
+updateWarningText();
 // ==========================================
 // レイヤー切り替えボタンをコントロールとして追加
 // ==========================================
