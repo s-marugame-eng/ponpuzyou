@@ -281,14 +281,17 @@ function renderWarningText(data) {
 }
 
 function updateWarningText() {
+  // 370000 の部分は表示したい地域コードに変更してください
   fetch('https://www.jma.go.jp/bosai/warning/data/r8/370000.json', { cache: 'no-store' })
     .then(function(res) {
       if (!res.ok) throw new Error('HTTPエラー: ' + res.status);
       return res.json();
     })
     .then(function(dataArray) {
-      // 配列の先頭（最新の発表）を渡す
-      renderWarningText(dataArray[0]);
+      var latest = dataArray.reduce(function(a, b) {
+        return new Date(a.reportDatetime) > new Date(b.reportDatetime) ? a : b;
+      });
+      renderWarningText(latest);
     })
     .catch(function(err) {
       console.error('警報・注意報テキストの取得に失敗しました', err.message);
