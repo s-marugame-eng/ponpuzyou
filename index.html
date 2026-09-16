@@ -352,13 +352,11 @@ var LayerControl = L.Control.extend({
     container.style.lineHeight = '1.6';
 
     container.innerHTML =
-      '<div><label><input type="checkbox" id="toggleRain" checked> 雨雲レーダー</label></div>' +
-      // '<div><label><input type="checkbox" id="toggleWarning"checked> 警報・注意報</label></div>';
+      '<div><label><input type="checkbox" id="toggleRain" checked> 雨雲レーダー</label></div>';
 
     L.DomEvent.disableClickPropagation(container);
 
     var rainCheckbox = container.querySelector('#toggleRain');
-    var warningCheckbox = container.querySelector('#toggleWarning');
 
     rainCheckbox.addEventListener('change', function(e) {
       rainLayerVisible = e.target.checked;
@@ -369,19 +367,10 @@ var LayerControl = L.Control.extend({
       }
     });
 
-    warningCheckbox.addEventListener('change', function(e) {
-      if (e.target.checked) {
-        if (jmaWarningLayer) jmaWarningLayer.addTo(map);
-      } else {
-        if (jmaWarningLayer) map.removeLayer(jmaWarningLayer);
-      }
-    });
-
     return container;
   }
 });
 map.addControl(new LayerControl());
-
 // ==========================================
 // 雨の強さの凡例を地図上に表示
 // ==========================================
