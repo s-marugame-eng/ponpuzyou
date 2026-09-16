@@ -86,13 +86,12 @@
   </style>
 </head>
 <body>
-<div style="display:flex; align-items:flex-start;">
-  <div>
-    <h1 style="text-align:center; font-size:16px;">四国テクニカル<br>丸亀市遠方監視一覧</h1>
-    <div id="marker-list" style="max-width:800px; margin:10px 0; padding:16px; border:1px solid #ccc; font-size:12px;"></div>
-    <div id="warning-text" style="max-width:800px; margin:20px 0; padding:16px; border:1px solid #ccc; font-size:12px;"></div>
-    <!-- ↓ここを追加 -->
-    <div id="tide-text" style="max-width:800px; margin:20px 0; padding:16px; border:1px solid #ccc; font-size:12px;">
+<div class="main-wrapper">
+  <div class="left-panel">
+    <h1>四国テクニカル<br>丸亀市遠方監視一覧</h1>
+    <div id="marker-list" class="info-box"></div>
+    <div id="warning-text" class="info-box"></div>
+    <div id="tide-text" class="info-box">
       <strong>🌊 丸亀市 本日の満潮・干潮</strong>
       <div id="tide-content">読み込み中...</div>
     </div>
