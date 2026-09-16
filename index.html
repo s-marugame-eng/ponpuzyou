@@ -38,6 +38,52 @@
     padding: 4px 8px;
   }
 </style>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    .main-wrapper {
+      display: flex;
+      align-items: flex-start;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .left-panel {
+      flex: 0 0 28vw;
+      width: 28vw;
+      min-width: 120px;
+      box-sizing: border-box;
+      padding: 0.5vw;
+      overflow: hidden;
+    }
+
+    .left-panel h1 {
+      text-align: center;
+      font-size: clamp(10px, 1.8vw, 16px);
+      margin: 0 0 6px 0;
+      line-height: 1.4;
+    }
+
+    .info-box {
+      width: 100%;
+      margin: 0.5vw 0;
+      padding: clamp(4px, 0.8vw, 16px);
+      border: 1px solid #ccc;
+      font-size: clamp(9px, 1.2vw, 12px);
+      box-sizing: border-box;
+    }
+
+    #map {
+      flex: 1 1 auto;
+      height: 100vh;
+      min-width: 0;
+    }
+  </style>
 </head>
 <body>
 <div style="display:flex; align-items:flex-start;">
