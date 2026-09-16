@@ -43,6 +43,7 @@
 <div style="display:flex; align-items:flex-start;">
   <div>
     <h1 style="text-align:center; font-size:20px;">四国テクニカル<br>丸亀市遠方監視一覧</h1>
+    <div id="marker-list" style="max-width:800px; margin:10px 0; padding:16px; border:1px solid #ccc; font-size:16px;"></div>
     <div id="warning-text" style="max-width:800px; margin:20px 0; padding:16px; border:1px solid #ccc; font-size:16px;"></div>
   </div>
   <div id="map"></div>
@@ -134,6 +135,40 @@ markers.forEach(function(m) {
   marker.bindTooltip(m.name, {permanent: true, direction: "top"});
 });
 
+// ==========================================
+// マーカー一覧をテキストリンクで表示
+// ==========================================
+function renderMarkerList() {
+  var container = document.getElementById('marker-list');
+  if (!container) return;
+  container.innerHTML = '';
+
+  var ul = document.createElement('ul');
+  ul.style.listStyle = 'none';
+  ul.style.margin = '0';
+  ul.style.padding = '0';
+
+  markers.forEach(function(m) {
+    var li = document.createElement('li');
+    li.style.margin = '4px 0';
+
+    var a = document.createElement('a');
+    a.href = m.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = m.no + '. ' + m.name;
+    a.style.color = '#0066cc';
+    a.style.fontWeight = 'bold';
+    a.style.textDecoration = 'none';
+
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+
+  container.appendChild(ul);
+}
+renderMarkerList();
+  
 // ==========================================
 // レイヤー管理用の変数
 // ==========================================
