@@ -409,61 +409,101 @@ map.addControl(new LegendControl());
 // 丸亀市の緯度経度: 34.2913, 133.7703
 // ==========================================
 async function fetchTideInfo() {
-  const API_KEY = '00aed66a-b19d-11f1-8998-0242ac120004-00aed6e2-b19d-11f1-8998-0242ac120004';
-  const lat = 34.2913;
-  const lng = 133.7703;
+  var API_KEY = '00aed66a-b19d-11f1-8998-0242ac120004-00aed6e2-b19d-11f1-8998-0242ac120004';
+  var lat = 34.2913;
+  var lng = 133.7703;
 
-  // 本日の0時～23時59分（UTC）
-  const now = new Date();
-  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-  const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+  // ==========================================
+  // 1日5回制限チェック
+  // ==========================================
+  var today = new Date().toISOString().slice(0, 10); // 例: "2026-09-16"
+  var storageKey = 'tide_count_' + today;
+  var count = parseInt(localStorage.getItem(storageKey) || '0');
 
-  const url = `https://api.stormglass.io/v2/tide/extremes/point` +
-              `?lat=${lat}&lng=${lng}` +
-              `&start=${start.toISOString()}&end=${end.toISOString()}`;
+  // 前日のデータを削除（古いキーを掃除）
+  Object.keys(localStorage).forEach(function(key) {
+    if (key.startsWith('tide_count_') && key !== storageKey) {
+      localStorage.removeItem(key);
+    }
+  });
+
+  // キャッシュされたデータがあれば再利用
+  var cacheKey = 'tide_cache_' + today;
+  var cachedHTML = localStorage.getItem(cacheKey);
+
+  if (cachedHTML) {
+    // キャッシュがあればAPIを叩かずそのまま表示
+    document.getElementById('tide-content').innerHTML = cachedHTML;
+    console.log('潮汐データ：キャッシュから表示');
+    return;
+  }
+
+  // 5回を超えている場合はAPIを叩かない
+  if (count >= 5) {
+    document.getElementById('tide-content').innerHTML =
+      '<span style="color:orange;">本日のAPI取得上限（5回）に達しました。明日更新されます。</span>';
+    console.log('潮汐データ：取得上限のため スキップ（本日' + count + '回取得済み）');
+    return;
+  }
+
+  // ==========================================
+  // API取得
+  // ==========================================
+  var now = new Date();
+  var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  var end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  var url = 'https://api.stormglass.io/v2/tide/extremes/point'
+          + '?lat=' + lat + '&lng=' + lng
+          + '&start=' + start.toISOString()
+          + '&end='   + end.toISOString();
 
   try {
-    const response = await fetch(url, {
+    var response = await fetch(url, {
       headers: { 'Authorization': API_KEY }
     });
-    const data = await response.json();
+    var data = await response.json();
+
+    // 取得回数をカウントアップ
+    localStorage.setItem(storageKey, String(count + 1));
+    console.log('潮汐データ：API取得成功（本日' + (count + 1) + '回目）');
 
     if (!data.data || data.data.length === 0) {
       document.getElementById('tide-content').innerHTML = 'データなし';
       return;
     }
 
-    // 表示用HTML生成
-    let html = '<table style="border-collapse:collapse; width:100%;">';
-    html += '<tr style="background:#f0f0f0;">' +
-            '<th style="padding:4px 8px; border:1px solid #ccc;">種別</th>' +
-            '<th style="padding:4px 8px; border:1px solid #ccc;">時刻（JST）</th>' +
-            '<th style="padding:4px 8px; border:1px solid #ccc;">潮位(m)</th>' +
-            '</tr>';
+    var html = '<table style="border-collapse:collapse; width:100%;">';
+    html += '<tr style="background:#f0f0f0;">'
+         +  '<th style="padding:4px 8px; border:1px solid #ccc;">種別</th>'
+         +  '<th style="padding:4px 8px; border:1px solid #ccc;">時刻（JST）</th>'
+         +  '<th style="padding:4px 8px; border:1px solid #ccc;">潮位(m)</th>'
+         +  '</tr>';
 
     data.data.forEach(function(item) {
-      // UTC→JST変換（+9時間）
-      const jst = new Date(new Date(item.time).getTime() + 9 * 60 * 60 * 1000);
-      const hhmm = jst.getHours().toString().padStart(2,'0') + ':' +
-                   jst.getMinutes().toString().padStart(2,'0');
+      var jst  = new Date(new Date(item.time).getTime() + 9 * 60 * 60 * 1000);
+      var hhmm = jst.getHours().toString().padStart(2,'0')
+               + ':' + jst.getMinutes().toString().padStart(2,'0');
 
-      const typeLabel = (item.type === 'high') ? '🔺 満潮' : '🔻 干潮';
-      const typeColor = (item.type === 'high') ? '#d32f2f' : '#1565c0';
+      var typeLabel = (item.type === 'high') ? '満潮' : '干潮';
+      var typeColor = (item.type === 'high') ? '#d32f2f' : '#1565c0';
 
-      html += `<tr>
-        <td style="padding:4px 8px; border:1px solid #ccc; color:${typeColor}; font-weight:bold;">${typeLabel}</td>
-        <td style="padding:4px 8px; border:1px solid #ccc; text-align:center;">${hhmm}</td>
-        <td style="padding:4px 8px; border:1px solid #ccc; text-align:right;">${item.height.toFixed(2)}</td>
-      </tr>`;
+      html += '<tr>'
+           +  '<td style="padding:4px 8px; border:1px solid #ccc; color:' + typeColor + '; font-weight:bold;">' + typeLabel + '</td>'
+           +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:center;">' + hhmm + '</td>'
+           +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:right;">' + item.height.toFixed(2) + '</td>'
+           +  '</tr>';
     });
 
     html += '</table>';
 
-    // 更新日時も表示
-    const nowJST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    html += `<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">
-               更新：${nowJST.getFullYear()}/${nowJST.getMonth()+1}/${nowJST.getDate()}
-             </div>`;
+    var nowJST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    html += '<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">'
+         +  '更新：' + nowJST.getFullYear() + '/' + (nowJST.getMonth()+1) + '/' + nowJST.getDate()
+         +  '</div>';
+
+    // キャッシュに保存（次回以降はAPIを叩かない）
+    localStorage.setItem(cacheKey, html);
 
     document.getElementById('tide-content').innerHTML = html;
 
@@ -474,7 +514,6 @@ async function fetchTideInfo() {
   }
 }
 
-// 呼び出し
 fetchTideInfo();
   
 </script>
