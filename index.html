@@ -403,6 +403,80 @@ var LegendControl = L.Control.extend({
   }
 });
 map.addControl(new LegendControl());
+
+// ==========================================
+// 満潮・干潮情報の取得と表示（Stormglass API）
+// 丸亀市の緯度経度: 34.2913, 133.7703
+// ==========================================
+async function fetchTideInfo() {
+  const API_KEY = 'ここにStormglassのAPIキーを入力';
+  const lat = 34.2913;
+  const lng = 133.7703;
+
+  // 本日の0時～23時59分（UTC）
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+  const end   = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+  const url = `https://api.stormglass.io/v2/tide/extremes/point` +
+              `?lat=${lat}&lng=${lng}` +
+              `&start=${start.toISOString()}&end=${end.toISOString()}`;
+
+  try {
+    const response = await fetch(url, {
+      headers: { 'Authorization': API_KEY }
+    });
+    const data = await response.json();
+
+    if (!data.data || data.data.length === 0) {
+      document.getElementById('tide-content').innerHTML = 'データなし';
+      return;
+    }
+
+    // 表示用HTML生成
+    let html = '<table style="border-collapse:collapse; width:100%;">';
+    html += '<tr style="background:#f0f0f0;">' +
+            '<th style="padding:4px 8px; border:1px solid #ccc;">種別</th>' +
+            '<th style="padding:4px 8px; border:1px solid #ccc;">時刻（JST）</th>' +
+            '<th style="padding:4px 8px; border:1px solid #ccc;">潮位(m)</th>' +
+            '</tr>';
+
+    data.data.forEach(function(item) {
+      // UTC→JST変換（+9時間）
+      const jst = new Date(new Date(item.time).getTime() + 9 * 60 * 60 * 1000);
+      const hhmm = jst.getHours().toString().padStart(2,'0') + ':' +
+                   jst.getMinutes().toString().padStart(2,'0');
+
+      const typeLabel = (item.type === 'high') ? '🔺 満潮' : '🔻 干潮';
+      const typeColor = (item.type === 'high') ? '#d32f2f' : '#1565c0';
+
+      html += `<tr>
+        <td style="padding:4px 8px; border:1px solid #ccc; color:${typeColor}; font-weight:bold;">${typeLabel}</td>
+        <td style="padding:4px 8px; border:1px solid #ccc; text-align:center;">${hhmm}</td>
+        <td style="padding:4px 8px; border:1px solid #ccc; text-align:right;">${item.height.toFixed(2)}</td>
+      </tr>`;
+    });
+
+    html += '</table>';
+
+    // 更新日時も表示
+    const nowJST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    html += `<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">
+               更新：${nowJST.getFullYear()}/${nowJST.getMonth()+1}/${nowJST.getDate()}
+             </div>`;
+
+    document.getElementById('tide-content').innerHTML = html;
+
+  } catch(e) {
+    document.getElementById('tide-content').innerHTML =
+      '<span style="color:red;">潮汐データの取得に失敗しました</span>';
+    console.error('Tide fetch error:', e);
+  }
+}
+
+// 呼び出し
+fetchTideInfo();
+  
 </script>
 
 
