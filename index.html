@@ -377,27 +377,59 @@ var LayerControl = L.Control.extend({
 });
 map.addControl(new LayerControl());
 // ==========================================
-// 雨の強さの凡例を地図上に表示
+// 雨の強さの凡例を地図上に表示（レスポンシブ対応）
 // ==========================================
 var LegendControl = L.Control.extend({
   options: { position: 'bottomright' },
   onAdd: function() {
     var container = L.DomUtil.create('div', 'legend-control');
-    container.style.backgroundColor = 'white';
-    container.style.padding = '8px 10px';
-    container.style.borderRadius = '6px';
-    container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
-    container.style.fontSize = '12px';
-    container.style.lineHeight = '1.6';
 
-    container.innerHTML =
-      '<div style="font-weight:bold; margin-bottom:4px;">降水強度 (mm/h)</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#a0d8ef;margin-right:6px;"></span>1未満（弱い）</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#3399ff;margin-right:6px;"></span>1~5</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#0033cc;margin-right:6px;"></span>5~20</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#ffff00;margin-right:6px;"></span>20~50</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#ff9900;margin-right:6px;"></span>50~80</div>' +
-      '<div><span style="display:inline-block;width:14px;height:14px;background:#ff0000;margin-right:6px;"></span>80以上（非常に強い）</div>';
+    // 画面幅に応じてサイズを調整
+    function getSize() {
+      var w = window.innerWidth;
+      if (w <= 480) {
+        // スマホ
+        return { fontSize: '9px', padding: '4px 6px', boxSize: '9px', marginRight: '4px' };
+      } else if (w <= 768) {
+        // タブレット
+        return { fontSize: '11px', padding: '6px 8px', boxSize: '11px', marginRight: '5px' };
+      } else {
+        // PC
+        return { fontSize: '12px', padding: '8px 10px', boxSize: '14px', marginRight: '6px' };
+      }
+    }
+
+    function applyStyle() {
+      var s = getSize();
+
+      container.style.backgroundColor = 'white';
+      container.style.padding         = s.padding;
+      container.style.borderRadius    = '6px';
+      container.style.boxShadow       = '0 1px 5px rgba(0,0,0,0.4)';
+      container.style.fontSize        = s.fontSize;
+      container.style.lineHeight      = '1.6';
+
+      var box = 'display:inline-block;'
+              + 'width:'        + s.boxSize    + ';'
+              + 'height:'       + s.boxSize    + ';'
+              + 'margin-right:' + s.marginRight + ';'
+              + 'vertical-align:middle;';
+
+      container.innerHTML =
+        '<div style="font-weight:bold; margin-bottom:4px;">降水強度 (mm/h)</div>' +
+        '<div><span style="' + box + 'background:#a0d8ef;"></span>1未満（弱い）</div>' +
+        '<div><span style="' + box + 'background:#3399ff;"></span>1～5</div>'       +
+        '<div><span style="' + box + 'background:#0033cc;"></span>5～20</div>'      +
+        '<div><span style="' + box + 'background:#ffff00;"></span>20～50</div>'     +
+        '<div><span style="' + box + 'background:#ff9900;"></span>50～80</div>'     +
+        '<div><span style="' + box + 'background:#ff0000;"></span>80以上（非常に強い）</div>';
+    }
+
+    // 初期適用
+    applyStyle();
+
+    // 画面リサイズ時に再適用
+    window.addEventListener('resize', applyStyle);
 
     return container;
   }
