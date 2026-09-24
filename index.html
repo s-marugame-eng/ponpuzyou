@@ -494,42 +494,40 @@ async function fetchTideInfo() {
   var API_KEY = '00aed66a-b19d-11f1-8998-0242ac120004-00aed6e2-b19d-11f1-8998-0242ac120004';
   var lat = 34.2913;
   var lng = 133.7703;
+  var MAX_COUNT = 10; // ★1日の上限回数
 
   // ==========================================
-  // 1日5回制限チェック
+  // 日付・カウント管理
   // ==========================================
-  var today = new Date().toISOString().slice(0, 10); // 例: "2026-09-16"
-  var storageKey = 'tide_count_' + today;
-  var count = parseInt(localStorage.getItem(storageKey) || '0');
+  var today = new Date().toISOString().slice(0, 10); // 例: "2026-09-25"
+  var countKey = 'tide_count_' + today;
+  var cacheKey = 'tide_cache_' + today;
+  var count = parseInt(localStorage.getItem(countKey) || '0');
 
-  // 前日のデータを削除（古いキーを掃除）
+  // 前日以前のキーを削除（日付が変わればカウント・キャッシュは自動リセット）
   Object.keys(localStorage).forEach(function(key) {
-    if (key.startsWith('tide_count_') && key !== storageKey) {
+    if ((key.startsWith('tide_count_') || key.startsWith('tide_cache_')) && !key.endsWith(today)) {
       localStorage.removeItem(key);
     }
   });
 
-  // キャッシュされたデータがあれば再利用
-  var cacheKey = 'tide_cache_' + today;
-  var cachedHTML = localStorage.getItem(cacheKey);
-
-  if (cachedHTML) {
-    // キャッシュがあればAPIを叩かずそのまま表示
-    document.getElementById('tide-content').innerHTML = cachedHTML;
-    console.log('潮汐データ：キャッシュから表示');
-    return;
-  }
-
-  // 5回を超えている場合はAPIを叩かない
-  if (count >= 5) {
-    document.getElementById('tide-content').innerHTML =
-      '<span style="color:orange;">本日のAPI取得上限（5回）に達しました。明日更新されます。</span>';
-    console.log('潮汐データ：取得上限のため スキップ（本日' + count + '回取得済み）');
+  // ==========================================
+  // 上限回数に達している場合は、最後に取得したデータを表示するだけ（APIは叩かない）
+  // ==========================================
+  if (count >= MAX_COUNT) {
+    var cachedHTML = localStorage.getItem(cacheKey);
+    if (cachedHTML) {
+      document.getElementById('tide-content').innerHTML = cachedHTML;
+      console.log('潮汐データ：本日の取得上限（' + MAX_COUNT + '回）に達したため、最後の取得結果を表示');
+    } else {
+      document.getElementById('tide-content').innerHTML =
+        '<span style="color:orange;">本日のAPI取得上限（' + MAX_COUNT + '回）に達しました。明日更新されます。</span>';
+    }
     return;
   }
 
   // ==========================================
-  // API取得
+  // API取得（毎回実行・毎回表示）
   // ==========================================
   var now = new Date();
   var start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
@@ -545,11 +543,12 @@ async function fetchTideInfo() {
       headers: { 'Authorization': API_KEY }
     });
     var data = await response.json();
-    console.log('APIレスポンス全体:', JSON.stringify(data, null, 2));
 
     // 取得回数をカウントアップ
-    localStorage.setItem(storageKey, String(count + 1));
-    console.log('潮汐データ：API取得成功（本日' + (count + 1) + '回目）');
+    var newCount = count + 1;
+    localStorage.setItem(countKey, String(newCount));
+    console.log('潮汐データ：API取得成功（本日' + newCount + '回目）');
+    console.log('APIレスポンス全体:', JSON.stringify(data, null, 2));
 
     if (!data.data || data.data.length === 0) {
       document.getElementById('tide-content').innerHTML = 'データなし';
@@ -583,17 +582,27 @@ async function fetchTideInfo() {
     var nowJST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
     html += '<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">'
          +  '更新：' + nowJST.getFullYear() + '/' + (nowJST.getMonth()+1) + '/' + nowJST.getDate()
+         +  ' ' + nowJST.getHours().toString().padStart(2,'0') + ':' + nowJST.getMinutes().toString().padStart(2,'0')
+         +  '（本日' + newCount + '/' + MAX_COUNT + '回目）'
          +  '</div>';
-
-    // キャッシュに保存（次回以降はAPIを叩かない）
-    localStorage.setItem(cacheKey, html);
 
     document.getElementById('tide-content').innerHTML = html;
 
+    // 常に「最後に取得した結果」をキャッシュとして保存
+    // → 10回に達した後や、エラー時のフォールバック表示用
+    localStorage.setItem(cacheKey, html);
+
   } catch(e) {
-    document.getElementById('tide-content').innerHTML =
-      '<span style="color:red;">潮汐データの取得に失敗しました</span>';
-    console.error('Tide fetch error:', e);
+    // 取得失敗時は、直前のキャッシュがあればそれを表示
+    var fallbackHTML = localStorage.getItem(cacheKey);
+    if (fallbackHTML) {
+      document.getElementById('tide-content').innerHTML = fallbackHTML;
+      console.warn('潮汐データ：取得失敗のため前回データを表示', e);
+    } else {
+      document.getElementById('tide-content').innerHTML =
+        '<span style="color:red;">潮汐データの取得に失敗しました</span>';
+      console.error('Tide fetch error:', e);
+    }
   }
 }
 
