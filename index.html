@@ -582,7 +582,7 @@ async function fetchTideInfo() {
 html += '<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">'
      +  '更新：' + nowJST.getUTCFullYear() + '/' + (nowJST.getUTCMonth()+1) + '/' + nowJST.getUTCDate()
      +  ' ' + nowJST.getUTCHours().toString().padStart(2,'0') + ':' + nowJST.getUTCMinutes().toString().padStart(2,'0')
-     +  '（本日' + newCount + '/' + MAX_COUNT + '回目）'
+     //+  '（本日' + newCount + '/' + MAX_COUNT + '回目）'
      +  '</div>';
 
     document.getElementById('tide-content').innerHTML = html;
