@@ -563,28 +563,27 @@ async function fetchTideInfo() {
          +  '</tr>';
 
     data.data.forEach(function(item) {
-      var jst  = new Date(new Date(item.time).getTime() + 9 * 60 * 60 * 1000);
-      var hhmm = jst.getHours().toString().padStart(2,'0')
-               + ':' + jst.getMinutes().toString().padStart(2,'0');
+  var jst  = new Date(new Date(item.time).getTime() + 9 * 60 * 60 * 1000);
+  var hhmm = jst.getUTCHours().toString().padStart(2,'0')
+           + ':' + jst.getUTCMinutes().toString().padStart(2,'0');
 
-      var typeLabel = (item.type === 'high') ? '満潮' : '干潮';
-      var typeColor = (item.type === 'high') ? '#d32f2f' : '#1565c0';
+  var typeLabel = (item.type === 'high') ? '満潮' : '干潮';
+  var typeColor = (item.type === 'high') ? '#d32f2f' : '#1565c0';
 
-      html += '<tr>'
-           +  '<td style="padding:4px 8px; border:1px solid #ccc; color:' + typeColor + '; font-weight:bold;">' + typeLabel + '</td>'
-           +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:center;">' + hhmm + '</td>'
-           +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:right;">' + item.height.toFixed(2) + '</td>'
-           +  '</tr>';
-    });
-
+  html += '<tr>'
+       +  '<td style="padding:4px 8px; border:1px solid #ccc; color:' + typeColor + '; font-weight:bold;">' + typeLabel + '</td>'
+       +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:center;">' + hhmm + '</td>'
+       +  '<td style="padding:4px 8px; border:1px solid #ccc; text-align:right;">' + item.height.toFixed(2) + '</td>'
+       +  '</tr>';
+});
     html += '</table>';
 
     var nowJST = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-    html += '<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">'
-         +  '更新：' + nowJST.getFullYear() + '/' + (nowJST.getMonth()+1) + '/' + nowJST.getDate()
-         +  ' ' + nowJST.getHours().toString().padStart(2,'0') + ':' + nowJST.getMinutes().toString().padStart(2,'0')
-         +  '（本日' + newCount + '/' + MAX_COUNT + '回目）'
-         +  '</div>';
+html += '<div style="text-align:right; color:#888; margin-top:4px; font-size:11px;">'
+     +  '更新：' + nowJST.getUTCFullYear() + '/' + (nowJST.getUTCMonth()+1) + '/' + nowJST.getUTCDate()
+     +  ' ' + nowJST.getUTCHours().toString().padStart(2,'0') + ':' + nowJST.getUTCMinutes().toString().padStart(2,'0')
+     +  '（本日' + newCount + '/' + MAX_COUNT + '回目）'
+     +  '</div>';
 
     document.getElementById('tide-content').innerHTML = html;
 
