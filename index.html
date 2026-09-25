@@ -539,16 +539,28 @@ async function fetchTideInfo() {
           + '&end='   + end.toISOString();
 
   try {
-    var response = await fetch(url, {
-      headers: { 'Authorization': API_KEY }
-    });
-    var data = await response.json();
+var response = await fetch(url, {
+  headers: { 'Authorization': API_KEY }
+});
+var data = await response.json();
 
-    // 取得回数をカウントアップ
-    var newCount = count + 1;
-    localStorage.setItem(countKey, String(newCount));
-    console.log('潮汐データ：API取得成功（本日' + newCount + '回目）');
-    console.log('APIレスポンス全体:', JSON.stringify(data, null, 2));
+// ★エラー応答またはデータ無しの場合は、カウントを消費せず前回キャッシュを表示
+if (!response.ok || !data.data || data.data.length === 0) {
+  console.warn('潮汐データ：APIエラーまたはデータ無しのため、カウント消費せず前回データを表示', data);
+  var cachedHTMLOnError = localStorage.getItem(cacheKey);
+  if (cachedHTMLOnError) {
+    document.getElementById('tide-content').innerHTML = cachedHTMLOnError;
+  } else {
+    document.getElementById('tide-content').innerHTML = 'データなし';
+  }
+  return;
+}
+
+// 取得回数をカウントアップ（正常データが取れた時だけ）
+var newCount = count + 1;
+localStorage.setItem(countKey, String(newCount));
+console.log('潮汐データ：API取得成功（本日' + newCount + '回目）');
+console.log('APIレスポンス全体:', JSON.stringify(data, null, 2));
 
     if (!data.data || data.data.length === 0) {
       document.getElementById('tide-content').innerHTML = 'データなし';
